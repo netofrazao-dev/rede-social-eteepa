@@ -6,6 +6,7 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import useAuth from '../hooks/useAuth';
 import useApp from '../hooks/useApp';
+import api from '../services/api';
 import { LogOut, Settings, Edit3, Heart, MessageSquare, Share2, Compass } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,62 +16,20 @@ export default function Profile() {
   const navigate = useNavigate();
   const [userPosts, setUserPosts] = useState([]);
 
+  // Busca na API só as publicações do usuário logado
   useEffect(() => {
-    // Load feed and filter by user name
-    const customPosts = localStorage.getItem('eetepa_custom_posts');
-    const loadedCustom = customPosts ? JSON.parse(customPosts) : [];
-    
-    // Add some initial mock posts representing user history if they match
-    const allPosts = [
-      ...loadedCustom,
-      {
-        id: 99,
-        name: 'Glauber Souza',
-        roleLabel: 'Diretor Geral',
-        role: 'admin',
-        date: '3 dias atrás',
-        content: 'Reunião pedagógica finalizada com sucesso. Alinhamos novas metas para o ensino técnico e uso de IA no ambiente escolar.',
-        likes: 31,
-        liked: true,
-        category: 'Aviso',
-      },
-      {
-        id: 100,
-        name: 'Prof. Marcos Silva',
-        roleLabel: 'Prof. de Informática',
-        role: 'teacher',
-        date: '5 dias atrás',
-        content: 'Materiais extras de lógica de programação adicionados no classroom. Lembrem-se de praticar antes de começar com bibliotecas!',
-        likes: 19,
-        liked: false,
-        category: 'Geral',
-      },
-      {
-        id: 101,
-        name: 'Amanda Costa',
-        roleLabel: 'Líder do 3º Info',
-        role: 'leader',
-        date: '4 dias atrás',
-        content: 'Conseguimos reservar o auditório para nosso debate estudantil na próxima sexta-feira! Divulguem nas salas!',
-        likes: 27,
-        liked: true,
-        category: 'Geral',
-      },
-      {
-        id: 102,
-        name: 'Thiago Rocha',
-        roleLabel: 'Aluno de Informática',
-        role: 'student',
-        date: '1 semana atrás',
-        content: 'Finalmente terminei meu primeiro projeto web com HTML e CSS puros! Muito satisfeito com os resultados obtidos.',
-        likes: 12,
-        liked: true,
-        category: 'Geral',
-      }
-    ];
-
-    const filtered = allPosts.filter((p) => p.name === user?.name);
-    setUserPosts(filtered);
+    let ativo = true;
+    api
+      .get('/posts/mine')
+      .then(({ data }) => {
+        if (ativo) setUserPosts(data);
+      })
+      .catch(() => {
+        if (ativo) setUserPosts([]);
+      });
+    return () => {
+      ativo = false;
+    };
   }, [user]);
 
   const handleLogout = () => {

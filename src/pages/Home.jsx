@@ -5,97 +5,67 @@ import Card, { CardHeader, CardBody, CardFooter } from '../components/Card';
 import Badge from '../components/Badge';
 import Skeleton from '../components/Skeleton';
 import Button from '../components/Button';
+import Comments from '../components/Comments';
 import useAuth from '../hooks/useAuth';
 import useApp from '../hooks/useApp';
 import { Heart, MessageSquare, Share2, Search, RefreshCw, Inbox, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-const MOCK_POSTS_INITIAL = [
-  {
-    id: 1,
-    name: 'Glauber Souza',
-    roleLabel: 'Diretor Geral',
-    role: 'admin',
-    date: 'Hoje, 10:30',
-    content: 'Atenção alunos e professores! Amanhã daremos início ao nosso workshop anual de tecnologia e inovação da EETEPA-BREVES. Contamos com a participação de todos no auditório principal a partir das 08:30.',
-    likes: 42,
-    liked: false,
-    category: 'Aviso',
-    mediaUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=600&auto=format&fit=crop&q=80',
-    mediaType: 'image',
-  },
-  {
-    id: 2,
-    name: 'Prof. Marcos Silva',
-    roleLabel: 'Prof. de Informática',
-    role: 'teacher',
-    date: 'Ontem, 16:45',
-    content: 'Publiquei no repositório oficial da turma as notas e gabaritos da nossa segunda prova prática de React + Vite. Excelente desempenho geral da turma, parabéns pelo esforço!',
-    likes: 29,
-    liked: false,
-    category: 'Notas',
-    mediaUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80',
-    mediaType: 'image',
-  },
-  {
-    id: 3,
-    name: 'Amanda Costa',
-    roleLabel: 'Líder do 3º Info',
-    role: 'leader',
-    date: '2 dias atrás',
-    content: 'Galera, lembrando que o prazo para entrega do projeto final integrador está chegando ao fim. Quem tiver dúvidas com a estilização usando Tailwind, me avise no laboratório que posso ajudar!',
-    likes: 18,
-    liked: true,
-    category: 'Ajuda',
-  },
-];
+import api from '../services/api';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [emptyState, setEmptyState] = useState(false);
+  const [openComments, setOpenComments] = useState(null); // id do post com comentários abertos
 
   const { user } = useAuth();
   const { addToast } = useApp();
   const navigate = useNavigate();
 
-  // Load posts with simulated network loading effect on mount
+  // Busca o feed na API quando a tela abre
   useEffect(() => {
-    loadMockFeed();
+    loadFeed();
   }, []);
 
-  const loadMockFeed = () => {
+  const loadFeed = async () => {
     setLoading(true);
-    setTimeout(() => {
-      // Check if we have items stored in localStorage for custom posts
-      const customPosts = localStorage.getItem('eetepa_custom_posts');
-      const loadedCustom = customPosts ? JSON.parse(customPosts) : [];
-      setPosts([...loadedCustom, ...MOCK_POSTS_INITIAL]);
-      setLoading(false);
+    try {
+      const { data } = await api.get('/posts');
+      setPosts(data);
       setEmptyState(false);
-    }, 900); // simulated loading animation delay
+    } catch {
+      addToast('Não foi possível carregar o feed.', 'error');
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLike = (id) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === id) {
-          const isLiked = !post.liked;
-          return {
-            ...post,
-            liked: isLiked,
-            likes: isLiked ? post.likes + 1 : post.likes - 1,
-          };
-        }
-        return post;
-      })
+  const handleLike = async (id) => {
+    try {
+      // O backend devolve o post já atualizado (likes e liked corretos)
+      const { data } = await api.post(`/posts/${id}/like`);
+      setPosts((prevPosts) => prevPosts.map((post) => (post.id === id ? data : post)));
+    } catch {
+      addToast('Não foi possível curtir agora.', 'error');
+    }
+  };
+
+  const toggleComments = (id) => {
+    setOpenComments((atual) => (atual === id ? null : id));
+  };
+
+  // Atualiza o contador de comentários de um post (quando um novo é enviado)
+  const bumpCommentCount = (id, delta) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, commentCount: (p.commentCount || 0) + delta } : p))
     );
   };
 
   const toggleEmptyState = () => {
     if (emptyState) {
-      loadMockFeed();
+      loadFeed();
     } else {
       setPosts([]);
       setEmptyState(true);
@@ -116,7 +86,7 @@ export default function Home() {
         title="Rede Social EETEPA-BREVES"
         rightElement={
           <button
-            onClick={loadMockFeed}
+            onClick={loadFeed}
             disabled={loading}
             className="p-2 rounded-xl text-text-muted hover:text-primary hover:bg-slate-100 active:rotate-180 transition-all duration-300 disabled:opacity-50"
             aria-label="Atualizar Feed"
@@ -271,14 +241,33 @@ export default function Home() {
                   </button>
 
                   <div className="flex gap-1.5 text-text-muted select-none">
-                    <button className="p-2 rounded-lg hover:bg-slate-50 hover:text-text-main active:scale-90 transition-transform">
+                    <button
+                      onClick={() => toggleComments(post.id)}
+                      className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg active:scale-90 transition-all ${
+                        openComments === post.id
+                          ? 'text-primary bg-primary/5'
+                          : 'hover:bg-slate-50 hover:text-text-main'
+                      }`}
+                      aria-label="Ver comentários"
+                    >
                       <MessageSquare className="w-4 h-4" />
+                      {post.commentCount > 0 && (
+                        <span className="text-3xs font-bold">{post.commentCount}</span>
+                      )}
                     </button>
                     <button className="p-2 rounded-lg hover:bg-slate-50 hover:text-text-main active:scale-90 transition-transform">
                       <Share2 className="w-4 h-4" />
                     </button>
                   </div>
                 </CardFooter>
+
+                {/* Seção de comentários (abre ao clicar no balão) */}
+                {openComments === post.id && (
+                  <Comments
+                    postId={post.id}
+                    onCountChange={(delta) => bumpCommentCount(post.id, delta)}
+                  />
+                )}
               </Card>
             ))}
           </div>
