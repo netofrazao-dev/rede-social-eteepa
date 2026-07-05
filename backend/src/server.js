@@ -19,8 +19,11 @@ await checarBanco();
 
 const app = createApp();
 
-app.listen(config.port, () => {
-  console.log(`🚀 API da Rede Social EETEPA rodando em ${config.baseUrl}`);
+// Escuta em 0.0.0.0 para que provedores de hospedagem (Render, Railway, etc.)
+// consigam rotear as requisições até o app. Sem isso, o serviço sobe mas fica
+// inacessível de fora ("no-server").
+app.listen(config.port, '0.0.0.0', () => {
+  console.log(`🚀 API da Rede Social EETEPA rodando na porta ${config.port}`);
   console.log('   Contas de teste (senha 123456):');
   console.log('   admin@ / teacher@ / leader@ / student@eetepa.edu.br');
 });
