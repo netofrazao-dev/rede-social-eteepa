@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Home from './pages/Home';
 import CreatePost from './pages/CreatePost';
 import Profile from './pages/Profile';
@@ -15,6 +16,7 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         {/* Public routes */}
         <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
         
         {/* Redirect Root to Feed */}
         <Route index element={<Navigate to="/feed" replace />} />

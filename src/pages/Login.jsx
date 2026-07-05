@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useApp from '../hooks/useApp';
 import Button from '../components/Button';
@@ -120,7 +120,7 @@ export default function Login() {
                 label="E-mail de Acesso"
                 type="email"
                 name="email"
-                placeholder="ex: student@eetepa.edu.br"
+                placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 icon={<Mail className="w-5 h-5 text-text-muted/80" />}
@@ -158,26 +158,17 @@ export default function Login() {
               </Button>
             </form>
 
-            {/* Helpful Mock Hint details */}
+            {/* Link para criar conta */}
             <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-              <p className="text-3xs text-text-muted font-semibold uppercase tracking-wider mb-2">
-                Contas Homologadas para Teste:
+              <p className="text-xs text-text-muted">
+                Ainda não tem conta?{' '}
+                <Link
+                  to="/register"
+                  className="font-bold text-primary hover:underline"
+                >
+                  Criar conta
+                </Link>
               </p>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {['admin', 'teacher', 'leader', 'student'].map((role) => (
-                  <span
-                    key={role}
-                    onClick={() => {
-                      setEmail(`${role}@eetepa.edu.br`);
-                      setPassword('123456');
-                      setError('');
-                    }}
-                    className="cursor-pointer px-2.5 py-1 rounded-lg bg-bg-sec hover:bg-slate-200 border border-slate-200/50 text-4xs font-bold text-text-main/80 select-none uppercase transition-all duration-100"
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
             </div>
           </CardBody>
         </Card>

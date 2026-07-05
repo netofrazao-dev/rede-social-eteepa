@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import useAuth from '../hooks/useAuth';
 import useApp from '../hooks/useApp';
+import api from '../services/api';
 import { Send, AlertCircle, Image, Video, X } from 'lucide-react';
 
 const MAX_CHARS = 280;
@@ -71,32 +72,21 @@ export default function CreatePost() {
     setValidationError('');
 
     try {
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Monta um FormData para enviar texto + arquivo de mídia de uma vez.
+      // O backend recebe o campo "media" via multer.
+      const formData = new FormData();
+      formData.append('content', content.trim());
+      formData.append('category', category);
+      if (mediaFile) formData.append('media', mediaFile);
 
-      const newPost = {
-        id: Date.now(),
-        name: user.name,
-        roleLabel: user.roleLabel,
-        role: user.role,
-        date: 'Agora mesmo',
-        content: content.trim(),
-        likes: 0,
-        liked: false,
-        category: category,
-        mediaUrl: mediaPreview, // Temporary local URL for high-fidelity frontend previewing
-        mediaType: mediaType,
-      };
-
-      // Retrieve existing custom posts, save new one
-      const existing = localStorage.getItem('eetepa_custom_posts');
-      const customPosts = existing ? JSON.parse(existing) : [];
-      localStorage.setItem('eetepa_custom_posts', JSON.stringify([newPost, ...customPosts]));
+      await api.post('/posts', formData);
 
       addToast('Publicação compartilhada com sucesso!', 'success');
       navigate('/feed');
     } catch (err) {
-      addToast('Ocorreu um erro ao publicar.', 'error');
+      const msg = err.response?.data?.error || 'Ocorreu um erro ao publicar.';
+      setValidationError(msg);
+      addToast(msg, 'error');
     } finally {
       setIsLoading(false);
     }

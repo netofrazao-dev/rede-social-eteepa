@@ -4,9 +4,11 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://api.example.com',
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   },
+  // Obs: NÃO fixamos 'Content-Type' aqui de propósito. Assim o axios usa
+  // application/json para objetos comuns e multipart/form-data (com boundary)
+  // automaticamente quando enviamos FormData (upload de foto/vídeo).
 });
 
 // Request interceptor
