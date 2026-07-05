@@ -36,6 +36,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Cria uma conta nova na API e já entra logado (guarda token + usuário).
+  const register = async (name, email, password) => {
+    try {
+      const { data } = await api.post('/auth/register', { name, email, password });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('eetepa_user', JSON.stringify(data.user));
+      setUser(data.user);
+      return data.user;
+    } catch (err) {
+      const msg =
+        err.response?.data?.error ||
+        'Não foi possível criar a conta. Verifique se o servidor está no ar.';
+      throw new Error(msg);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('eetepa_user');
@@ -46,6 +62,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    register,
     logout,
     isAuthenticated: !!user,
   };

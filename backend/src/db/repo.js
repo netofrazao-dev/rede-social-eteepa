@@ -32,6 +32,24 @@ export const users = {
       .eq('author_id', userId);
     return count || 0;
   },
+
+  // Cria um novo usuário (cadastro). Devolve a linha criada.
+  async create({ name, email, passwordHash, role, roleLabel }) {
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        name,
+        email,
+        password_hash: passwordHash,
+        role,
+        role_label: roleLabel,
+        avatar: '',
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 export const posts = {
